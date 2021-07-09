@@ -1,15 +1,27 @@
 import React, { Component } from 'react';
-import {getMovies} from './getMovies';
+
+import axios from 'axios'
 
 export default class Movies extends Component {
     
     constructor(){
         super();
         this.state={
-            movies:getMovies(),
+            movies:[],
             currSearchText:'',
-            currPage:1
+            currPage:1,
+            genres:[{_id:'abcd', name:'All Genres'}],
+            cGenre:'All Genres'
         }
+    }
+    
+    async componentDidMount(){
+        let res=await axios.get('https://backend-react-movie.herokuapp.com/movies')
+        let genresApi=await axios.get('https://backend-react-movie.herokuapp.com/genres')
+        this.setState({
+            movies: res.data.movies,
+            genres:[...this.state.genres,...genresApi.data.genres ]
+        })
     }
     
     onDelete=(id)=>{
@@ -85,19 +97,21 @@ export default class Movies extends Component {
         })
     }
     
+    handleGenreChange=(genreObj)=>{
+        this.setState({
+            cGenre:genreObj.name
+        })
+    }
+    
     render() {
         
         // console.log(this.state.currSearchText)
         let filteredArr=[];
-        let{currSearchText,movies,currPage}=this.state
+        let{currSearchText,movies,currPage,cGenre}=this.state
         let limit=4
         if(currSearchText==''){
             filteredArr=movies
         }else{
-            // filteredArr=movies.filter((movieObj)=>{
-            //     let title=movieObj.title.toLowerCase()
-            //     return title.includes(currSearchText.toLowerCase())
-            // })
             filteredArr = movies.filter(function(movieObj) {
                 let title = movieObj.title.toLowerCase();
                 console.log(title);
@@ -105,7 +119,14 @@ export default class Movies extends Component {
             })
         
         }   
+        if(cGenre!='All Genres'){
+            filteredArr=filteredArr.filter((obj)=>{
+                return obj.genre.name==cGenre
+            })
+        }
         
+        
+        //////////pagination
         let numberofPage = Math.ceil(filteredArr.length / limit);
         let pageNumberArr = [];
         for (let i = 0; i < numberofPage; i++) {
@@ -121,7 +142,31 @@ export default class Movies extends Component {
         return (
             <div className='container'>
                  <div className='row'>
-                    <div className='col-3'>Hello</div>
+                    <div className='col-3'>
+                    
+                        <ul className='list-group'>
+                            {
+                                this.state.genres.map((genreObj)=>{
+                                
+                                    return(
+                                    
+                                        <li onClick={()=>{
+                                            this.handleGenreChange(genreObj)
+                                        }} key={genreObj._id} className='list-group-item'>
+                                            {genreObj.name}
+                                        </li>
+                                    
+                                    )
+                                
+                                })
+                            
+                            }
+                            <h5>Current Genre : {this.state.cGenre}</h5>
+                            
+                        </ul>
+                    
+                    
+                    </div>
                     <div className='col-9'>
                     <input types="search" value={this.state.currSearchText} onChange={this.handleChange}></input>
                     <table class="table">
